@@ -8,7 +8,7 @@ from fwtool import tts
 
 
 def _fake_rhvoice(tmp_path):
-    for name, lang, gender in (("anna", "Russian", "female"), ("pavel", "Russian", "male"),
+    for name, lang, gender in (("tatiana", "Russian", "female"), ("pavel", "Russian", "male"),
                                ("alan", "English", "male")):
         d = tmp_path / name
         d.mkdir()
@@ -18,21 +18,21 @@ def _fake_rhvoice(tmp_path):
 def test_rhvoice_discovers_only_russian_voices(tmp_path, monkeypatch):
     _fake_rhvoice(tmp_path)
     monkeypatch.setenv("FWTOOL_RHVOICE_DIRS", str(tmp_path))
-    names = {(v.name, v.gender) for v in tts.ENGINES["rhvoice"].voices() if v.name in ("anna", "pavel", "alan")}
-    assert names == {("anna", "female"), ("pavel", "male")}
+    names = {(v.name, v.gender) for v in tts.ENGINES["rhvoice"].voices() if v.name in ("tatiana", "pavel", "alan")}
+    assert names == {("tatiana", "female"), ("pavel", "male")}
 
 
-def test_auto_prefers_rhvoice_anna_then_piper(monkeypatch):
+def test_auto_prefers_rhvoice_tatiana_then_piper(monkeypatch):
     avail = {"rhvoice": True, "piper": True, "espeak": True}
     for n, v in avail.items():
         monkeypatch.setattr(tts.ENGINES[n], "available", lambda v=v: v, raising=False)
-    monkeypatch.setattr(tts.ENGINES["rhvoice"], "voices", lambda: [tts.Voice("rhvoice", "anna")])
+    monkeypatch.setattr(tts.ENGINES["rhvoice"], "voices", lambda: [tts.Voice("rhvoice", "tatiana")])
     eng, voice = tts.resolve("auto", "auto")
-    assert (eng.name, voice) == ("rhvoice", "anna")
+    assert (eng.name, voice) == ("rhvoice", "tatiana")
     monkeypatch.setattr(tts.ENGINES["rhvoice"], "available", lambda: False)
     assert tts.resolve("auto", "auto")[0].name == "piper"
     with pytest.raises(tts.TtsError):
-        tts.resolve("rhvoice", "anna")
+        tts.resolve("rhvoice", "tatiana")
     with pytest.raises(tts.TtsError):
         tts.resolve("nope", "x")
 

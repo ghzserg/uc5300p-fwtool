@@ -16,7 +16,7 @@ image-voice:
 	docker build --target voice -t $(IMAGE):voice .
 
 # ONE COMMAND: stock firmware -> translated firmware (release/UC5300P.bin)
-#   make ru FW=stock/UC5300P.bin ENGINE=rhvoice VOICE=anna
+#   make ru FW=stock/UC5300P.bin ENGINE=rhvoice VOICE=tatiana
 ru: image-voice
 	$(RUNVOICE) translate /w/$(FW) /w/release/UC5300P.bin --overlay /w/overlays/$(OVERLAY) --engine $(ENGINE) --voice $(VOICE)
 ru-novoice: image
