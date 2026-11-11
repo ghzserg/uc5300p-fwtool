@@ -63,6 +63,9 @@ def render_glyph(ch, ysize, bpl, size, base, ttf):
 
 
 def apply(overlay_dir, work, profile_name="uc5300p"):
+    if not os.path.isfile(os.path.join(work, "manifest.json")):
+        raise SystemExit(f"{work} is not an unpacked work tree - run `make unpack` "
+                         f"(fwtool unpack <firmware> {work}) first")
     prof = prof_mod.load(profile_name)
     with open(os.path.join(overlay_dir, "overlay.json")) as fh:
         meta = json.load(fh)

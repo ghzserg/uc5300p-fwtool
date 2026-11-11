@@ -65,3 +65,13 @@ def test_samples_skip_unavailable_engines(tmp_path, monkeypatch):
         monkeypatch.setattr(tts.ENGINES[n], "available", lambda: False)
     assert tts.samples("тест", str(tmp_path), log=lambda *_: None) == len(tts.ENGINES["espeak"].VARIANTS)
     assert "ru+f2" in calls
+
+
+def test_auto_engine_finds_voice_by_name(monkeypatch):
+    for n in ("rhvoice", "piper", "espeak"):
+        monkeypatch.setattr(tts.ENGINES[n], "available", lambda: True)
+    monkeypatch.setattr(tts.ENGINES["rhvoice"], "voices", lambda: [tts.Voice("rhvoice", "anna")])
+    assert tts.resolve("auto", "anna")[0].name == "rhvoice"
+    assert tts.resolve("auto", "denis")[0].name == "piper"          # only Piper has denis
+    with pytest.raises(tts.TtsError):
+        tts.resolve("auto", "nobody")

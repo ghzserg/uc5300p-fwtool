@@ -156,6 +156,9 @@ def apply_app(work, prof, sec, payload):
 
 
 def pack(work, out_path, profile_name=None):
+    if not os.path.isfile(os.path.join(work, "manifest.json")):
+        raise SystemExit(f"{work} is not an unpacked work tree - run `make unpack` "
+                         f"(fwtool unpack <firmware> {work}) first")
     with open(os.path.join(work, "manifest.json")) as fh:
         man = json.load(fh)
     prof = prof_mod.load(profile_name or man["profile"])

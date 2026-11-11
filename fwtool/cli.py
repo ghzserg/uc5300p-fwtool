@@ -58,6 +58,7 @@ def cmd_pack(a):
 def cmd_overlay(a):
     from . import overlay
     overlay.apply(a.overlay, a.work, a.profile or "uc5300p")
+    print("note: voice prompts are unchanged - run `make voice` (fwtool voice) to replace them")
 
 
 def _overlay_dir(name):

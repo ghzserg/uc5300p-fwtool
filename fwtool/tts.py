@@ -152,6 +152,11 @@ def resolve(engine="auto", voice="auto", tts_cmd=None):
     if tts_cmd:
         ENGINES["cmd"].template = tts_cmd
         engine, voice = "cmd", "custom"
+    if engine == "auto" and voice != "auto":      # only a voice given: find the engine that has it
+        for e in ("rhvoice", "piper", "espeak"):
+            if ENGINES[e].available() and voice in [v.name for v in ENGINES[e].voices()]:
+                return ENGINES[e], voice
+        raise TtsError(f"voice {voice!r} not found in any available engine (see `fwtool voices`)")
     if engine == "auto":
         for e, v in AUTO_ORDER:
             if ENGINES[e].available():

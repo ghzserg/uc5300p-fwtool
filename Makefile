@@ -8,7 +8,17 @@ TEXT    ?= Переход в режим движения.
 RUN      = docker run --rm -v $(CURDIR):/w $(IMAGE)
 RUNVOICE = docker run --rm -v $(CURDIR):/w $(IMAGE):voice
 
-.PHONY: image image-voice ru ru-novoice voices sample unpack overlay voice pack verify info test release clean
+.PHONY: help image image-voice ru ru-novoice voices sample unpack overlay voice pack verify info test release clean
+.DEFAULT_GOAL := help
+
+help:
+	@echo "make ru [VOICE=anna|denis|...]  - русская прошивка одной командой -> release/UC5300P.bin"
+	@echo "make ru-novoice                  - то же, но без озвучки"
+	@echo "make sample                      - WAV-образцы всех голосов в voice-samples/"
+	@echo "make voices                      - список движков и голосов"
+	@echo "make unpack|overlay|voice|pack   - по шагам (сами распаковывают прошивку, если work/ нет)"
+	@echo "make verify FILE=x.bin | info | test | release TAG=v1.0 | clean"
+	@echo "Оригинальная прошивка: $(FW)"
 
 image:
 	docker build --target base -t $(IMAGE) .
@@ -33,16 +43,24 @@ unpack: image
 	rm -rf work
 	$(RUN) unpack /w/$(FW) /w/work
 
+# the steps below unpack the stock firmware by themselves when work/ does not exist yet
+ifeq ($(wildcard work/manifest.json),)
+work/manifest.json: $(FW)
+	$(MAKE) unpack
+$(FW):
+	@echo "Положите оригинальную прошивку в $(FW)"; exit 1
+endif
+
 # optional: apply a translation overlay (overlays/<name>) to work/
-overlay: image
+overlay: work/manifest.json image
 	$(RUN) overlay /w/overlays/$(OVERLAY) /w/work
 
 # optional: replace voice prompts with a local female TTS voice
-voice: image-voice
+voice: work/manifest.json image-voice
 	$(RUNVOICE) voice /w/overlays/$(OVERLAY) /w/work --engine $(ENGINE) --voice $(VOICE)
 
 # stage 2: work/ -> release/UC5300P.bin  (+ MD5 / CRC / device-code emulation checks)
-pack: image
+pack: work/manifest.json image
 	$(RUN) pack /w/work /w/release/UC5300P.bin --verify --emulate
 
 verify: image

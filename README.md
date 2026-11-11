@@ -23,6 +23,18 @@ stock/UC5300P.bin ──unpack──▶ work/ (папки и файлы, кот�
 
 > Без правок `unpack` → `pack` даёт **побайтно тот же файл**, что и исходный (проверяется тестом).
 
+## Шпаргалка
+
+| Команда | Что делает |
+|---|---|
+| `make` | показывает этот список |
+| `make ru` | русская прошивка одной командой → `release/UC5300P.bin` |
+| `make ru VOICE=denis` | то же с другим голосом: движок подбирается по имени голоса |
+| `make ru-novoice` | то же без озвучки (быстро, без синтезатора) |
+| `make sample` / `make voices` | образцы всех голосов / список голосов |
+| `make unpack` · `overlay` · `voice` · `pack` | те же шаги по отдельности; если `work/` нет, прошивка распаковывается сама |
+| `make verify FILE=x.bin` | проверить любой файл так, как это делает устройство |
+
 ## Одна команда: переведённая прошивка
 
 ```bash
@@ -59,8 +71,8 @@ fwtool translate stock/UC5300P.bin release/UC5300P.bin --engine rhvoice --voice 
 
 ```bash
 make image                 # собрать Docker-образ
-make unpack                # этап 1: stock/UC5300P.bin -> work/
-make overlay OVERLAY=ru    # (по желанию) русские тексты и кириллические глифы
+make unpack                # этап 1: stock/UC5300P.bin -> work/ (следующие шаги сделают его сами, если пропустить)
+make overlay OVERLAY=ru    # (по желанию, только после make unpack) русские тексты и кириллические глифы
 make voice ENGINE=rhvoice VOICE=anna   # (по желанию) озвучка, см. «Голоса озвучки»
 #   ...правьте файлы в work/ ...
 make pack                  # этап 2: work/ -> release/UC5300P.bin + проверки
