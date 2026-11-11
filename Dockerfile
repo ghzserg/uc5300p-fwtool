@@ -7,14 +7,14 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY fwtool ./fwtool
 COPY overlays ./overlays
-COPY tools ./tools
 RUN pip install --no-cache-dir . pillow unicorn capstone
 WORKDIR /w
 ENTRYPOINT ["fwtool"]
 
-# Optional image with a local female Russian TTS (Piper) for `make voice`
+# Image with local TTS engines for the voice prompts (RHVoice: all Russian voices, Piper, eSpeak NG)
 FROM base AS voice
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg rhvoice rhvoice-russian espeak-ng \
+ && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir piper-tts huggingface_hub
 ENV HF_HOME=/w/.cache/huggingface
-ENTRYPOINT ["python", "/app/tools/gen_voice.py"]

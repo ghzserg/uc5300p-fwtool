@@ -23,6 +23,36 @@ stock/UC5300P.bin ──unpack──▶ work/ (папки и файлы, кот�
 
 > Без правок `unpack` → `pack` даёт **побайтно тот же файл**, что и исходный (проверяется тестом).
 
+## Одна команда: переведённая прошивка
+
+```bash
+make ru FW=stock/UC5300P.bin                          # русская прошивка -> release/UC5300P.bin
+make ru ENGINE=rhvoice VOICE=anna                     # то же, с выбранным голосом
+make ru-novoice                                       # только тексты, без озвучки (быстро, без TTS)
+
+# без Docker
+fwtool translate stock/UC5300P.bin release/UC5300P.bin --engine rhvoice --voice anna
+```
+
+Команда делает всё сама: распаковывает, применяет оверлей `ru` (тексты, шрифты), озвучивает подсказки выбранным голосом,
+собирает прошивку и проверяет её (MD5, CRC16, эмуляция процедуры обновления устройства).
+Рабочее дерево по умолчанию временное; чтобы править его руками — `--work work --keep-work` или обычные `unpack`/`pack` ниже.
+
+## Голоса озвучки
+
+Движки выбираются через `--engine` / `ENGINE=`, голос — `--voice` / `VOICE=`. `auto` берёт RHVoice **anna**,
+иначе Piper **irina**, иначе eSpeak.
+
+| Движок | Голоса | Заметки |
+|---|---|---|
+| `rhvoice` | все русские голоса, найденные в системе: в образе из пакета `rhvoice-russian` это `aleksandr`, `aleksandr-hq`, `anna`, `arina`, `artemiy`, `elena`, `evgeniy-rus`, `irina`, `mikhail`, `pavel`, `tatiana`, `victoria`, `vitaliy`, `yuriy` | список берётся из `voice.info` установленных голосов; новые голоса RHVoice положите в `/usr/local/share/RHVoice/voices` или в каталог из `FWTOOL_RHVOICE_DIRS` |
+| `piper` | `irina` (жен.), `denis`, `dmitri`, `ruslan`, либо путь к своему `.onnx` | нейросеть, модель скачивается при первом запуске; свои модели — каталог `FWTOOL_PIPER_DIR` |
+| `espeak` | `ru`, `ru+f2`, `ru+f3`, `ru+f4`, `ru+m3`, `ru+m5` | роботизированный, запасной вариант |
+| `cmd` | любой | `--tts-cmd 'mytts --out {out} --text {text}'`: `{text}` и `{out}` подставляются сами |
+
+Выбрать голос на слух: `make sample` (или `fwtool voices --sample "Переход в режим движения."`) пишет по WAV-файлу
+на каждый доступный голос в `voice-samples/`. Список: `make voices`.
+
 ## Быстрый старт
 
 Нужны Docker и `make`. Оригинальную прошивку положите в `stock/UC5300P.bin` (в репозиторий она не входит).
@@ -31,7 +61,7 @@ stock/UC5300P.bin ──unpack──▶ work/ (папки и файлы, кот�
 make image                 # собрать Docker-образ
 make unpack                # этап 1: stock/UC5300P.bin -> work/
 make overlay OVERLAY=ru    # (по желанию) русские тексты и кириллические глифы
-make voice                 # (по желанию) русские голосовые подсказки, женский голос Piper
+make voice ENGINE=rhvoice VOICE=anna   # (по желанию) озвучка, см. «Голоса озвучки»
 #   ...правьте файлы в work/ ...
 make pack                  # этап 2: work/ -> release/UC5300P.bin + проверки
 ```
