@@ -1,5 +1,5 @@
 {
- "title": "Russian UI (Cyrillic glyphs rendered from DejaVu Sans Condensed)",
+ "title": "Russian UI (Cyrillic glyphs from the Terminus pixel font)",
  "free_slot_start": 29,
  "font_sizes": {
   "14": 11,
@@ -9,5 +9,7 @@
   "22": 18,
   "24": 21
  },
- "notes": "Ids 218-382 are camera-SDK menus unused on this device; they are blanked to free string space."
+ "notes": "Ids 218-382 are camera-SDK menus unused on this device; they are blanked to free string space.",
+ "width_check_min_id": 683,
+ "pixel_style": "b"
 }

@@ -41,6 +41,70 @@ def read_overlay_tsv(path):
     return rows
 
 
+PIXEL_DIRS = [os.environ.get("FWTOOL_TERMINUS_DIR", ""), "/usr/share/fonts/X11/misc", "/usr/share/fonts/misc"]
+TERMINUS_SIZES = (12, 14, 16, 18, 20, 22, 24, 28, 32)
+_probe_cache = {}
+
+
+def _pcf(size, style):
+    """Terminus ter-u<size><n|b>_unicode.pcf.gz (xfonts-terminus): hand-drawn pixel font, SIL OFL."""
+    for d in PIXEL_DIRS:
+        p = os.path.join(d, "ter-u%d%s_unicode.pcf.gz" % (size, style)) if d else ""
+        if p and os.path.exists(p):
+            return p
+    return None
+
+
+def _draw(path, size, text, shift, height):
+    f = ImageFont.truetype(path, size)
+    im = Image.new("1", (size * max(len(text), 1) + 8, height), 0)
+    dr = ImageDraw.Draw(im)
+    dr.fontmode = "1"
+    dr.text((0, f.getmetrics()[0] + shift), text, font=f, fill=1, anchor="ls")
+    return im
+
+
+def _ink_rows(im):
+    rows = [y for y in range(im.height) if any(im.getpixel((x, y)) for x in range(im.width))]
+    return rows[0], rows[-1]
+
+
+def pick_pixel_font(ysize, base, style="b"):
+    """Largest Terminus size whose capitals can stand on row `base` (the baseline of the device's own
+    Latin glyphs) without its descenders (р, у, д...) running out of the `ysize`-row cell.
+    Returns (path, size, shift) or None when Terminus is not installed."""
+    best = None
+    for t in TERMINUS_SIZES:
+        path = _pcf(t, style)
+        if not path:
+            continue
+        key = (path, t)
+        if key not in _probe_cache:
+            _probe_cache[key] = (_ink_rows(_draw(path, t, "НЖЗ", 20, t + 60))[1] - 20,
+                                 _ink_rows(_draw(path, t, "рцщду", 20, t + 60))[1] - 20)
+        cap_bottom, tail_bottom = _probe_cache[key]
+        shift = base - cap_bottom
+        if shift >= 0 and tail_bottom + shift <= ysize - 1:
+            best = (path, t, shift)
+    return best
+
+
+def render_glyph_pixel(ch, ysize, bpl, pick):
+    """Whole Terminus cell, not trimmed: like the device's own glyphs, the side bearings are part of the
+    glyph and its width is the font's advance, so neighbouring letters can never touch."""
+    path, t, shift = pick
+    im = _draw(path, t, ch, shift, ysize + 8)
+    w = int(round(ImageFont.truetype(path, t).getlength(ch)))
+    if w > bpl * 8:
+        raise SystemExit(f"glyph {ch!r} too wide ({w}px) for {bpl * 8}px cell")
+    out = Image.new("1", (bpl * 8, ysize), 1)          # white background, black ink
+    for y in range(ysize):
+        for x in range(w):
+            if im.getpixel((x, y)):
+                out.putpixel((x, y), 0)
+    return out, w
+
+
 def render_glyph(ch, ysize, bpl, size, base, ttf):
     f = ImageFont.truetype(ttf, size)
     im = Image.new("1", (bpl * 8 + 8, ysize + 12), 0)
@@ -60,6 +124,32 @@ def render_glyph(ch, ysize, bpl, size, base, ttf):
             if im.getpixel((x0 + x, y)):
                 out.putpixel((x, y), 0)
     return out, w
+
+
+def _adv(m, code):
+    g = m["glyphs"].get("%04X" % code)
+    return g["xdist"] if g else 0
+
+
+def width_report(m, new_rows, orig, assign, limit=8):
+    """Compare on-screen width (px, in the font described by `m`) of each new string with the stock one."""
+    worse = []
+    for sid, text in new_rows.items():
+        o = orig.get(str(sid))
+        if not o:
+            continue
+        data, i, old = bytes.fromhex(o["hex"]), 0, 0
+        while i < len(data):
+            if data[i] >= 0xA1 and i + 1 < len(data):
+                old += _adv(m, (data[i] << 8) | data[i + 1])
+                i += 2
+            else:
+                old += _adv(m, data[i])
+                i += 1
+        new = sum(_adv(m, 0xA1A1 + assign[c]) if c in assign else _adv(m, ord(c)) for c in text if ord(c) >= 0x20)
+        if new > old + limit:
+            worse.append((new - old, sid, new, old, text))
+    return sorted(worse, reverse=True)
 
 
 def apply(overlay_dir, work, profile_name="uc5300p"):
@@ -103,10 +193,13 @@ def apply(overlay_dir, work, profile_name="uc5300p"):
     with open(tsv_path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
     # glyphs for every font of the k2 family
-    ttf = _ttf()
+    style = meta.get("pixel_style", "b")
+    spacing = meta.get("letter_spacing", 0)        # extra pixels after every pixel-font glyph
+    ttf = None
     sizes = {int(k): v for k, v in meta.get("font_sizes", {}).items()} or DEFAULT_SIZES
     fonts_dir = os.path.join(work, "app", "fonts")
     n = 0
+    ref = None
     for d in sorted(os.listdir(fonts_dir)):
         fj = os.path.join(fonts_dir, d, "font.json")
         m = json.load(open(fj))
@@ -117,13 +210,30 @@ def apply(overlay_dir, work, profile_name="uc5300p"):
         himg = Image.open(os.path.join(fonts_dir, d, "glyphs", "0048.png")).convert("1")
         rows_ink = [y for y in range(ysize) if any(himg.getpixel((x, y)) == 0 for x in range(himg.width))]
         base = rows_ink[-1]
+        pick = pick_pixel_font(ysize, base, style)
+        if pick is None and ttf is None:
+            print("note: pixel font Terminus not found (install xfonts-terminus) - using vector DejaVu, "
+                  "glyph heights may look uneven")
+            ttf = _ttf()
         for ch, slot in assign.items():
             key = "%04X" % (0xA1A1 + slot)
             bpl = m["glyphs"][key]["bpl"]
-            img, w = render_glyph(ch, ysize, bpl, sizes.get(ysize, round(ysize * 0.8)), base, ttf)
+            if pick:
+                img, w = render_glyph_pixel(ch, ysize, bpl, pick)
+            else:
+                img, w = render_glyph(ch, ysize, bpl, sizes.get(ysize, round(ysize * 0.8)), base, ttf)
             img.save(os.path.join(fonts_dir, d, "glyphs", key + ".png"))
-            m["glyphs"][key]["xsize"], m["glyphs"][key]["xdist"] = w, w + 1
+            m["glyphs"][key]["xsize"], m["glyphs"][key]["xdist"] = w, (w + spacing if pick else w + 1)
             n += 1
         json.dump(m, open(fj, "w"), indent=1)
+        if ysize == 16:
+            ref = m
+    if ref:
+        worse = width_report(ref, {k: v for k, v in new_rows.items() if k >= meta.get("width_check_min_id", 0)},
+                             orig, assign)
+        if worse:
+            print(f"warning: {len(worse)} string(s) are wider than the stock text (16px font); worst:")
+            for _, sid, new, old, text in worse[:8]:
+                print(f"  id {sid}: {new}px vs {old}px  {text!r}")
     print(f"overlay '{meta.get('title', os.path.basename(overlay_dir))}': {len(new_rows)} strings, "
           f"{len(letters)} new glyphs x fonts = {n} glyph images")

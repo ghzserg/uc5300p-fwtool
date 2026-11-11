@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM python:3.12-slim AS base
 RUN apt-get update \
- && apt-get install -y --no-install-recommends fonts-dejavu-extra \
+ && apt-get install -y --no-install-recommends fonts-dejavu-extra xfonts-terminus \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pyproject.toml README.md ./
@@ -17,7 +17,7 @@ FROM ubuntu:24.04 AS voice
 RUN sed -i 's/^Components: .*/Components: main restricted universe multiverse/' /etc/apt/sources.list.d/ubuntu.sources || true
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 python3-venv ffmpeg rhvoice rhvoice-russian espeak-ng \
-    fonts-dejavu-extra \
+    fonts-dejavu-extra xfonts-terminus \
  && rm -rf /var/lib/apt/lists/*
 RUN python3 -m venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
