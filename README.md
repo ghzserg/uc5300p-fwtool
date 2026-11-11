@@ -40,7 +40,7 @@ fwtool translate stock/UC5300P.bin release/UC5300P.bin --engine rhvoice --voice 
 
 ## Голоса озвучки
 
-Движки выбираются через `--engine` / `ENGINE=`, голос — `--voice` / `VOICE=`. `auto` берёт RHVoice **anna**,
+Движки выбираются через `--engine` / `ENGINE=`, голос — `--voice` / `VOICE=`. `auto` берёт RHVoice **tatiana**,
 иначе Piper **irina**, иначе eSpeak.
 
 | Движок | Голоса | Заметки |
