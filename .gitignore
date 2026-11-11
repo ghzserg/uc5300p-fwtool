@@ -1,0 +1,9 @@
+stock/*
+!stock/README.md
+work/
+release/
+.cache/
+__pycache__/
+*.egg-info/
+build/
+.pytest_cache/

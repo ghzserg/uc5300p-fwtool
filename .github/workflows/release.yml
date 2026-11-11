@@ -1,0 +1,23 @@
+# Builds release/UC5300P.bin from a committed `work/` tree and attaches it to the GitHub release for tag v*.
+# Only useful if you decide to commit `work/` (it contains the manufacturer's code/data - check the licence first).
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: check work/ exists
+        run: test -f work/manifest.json || (echo "work/ is not committed - nothing to build" && exit 1)
+      - run: docker build --target base -t uc5300p-fwtool .
+      - run: docker run --rm -v "$PWD:/w" uc5300p-fwtool pack /w/work /w/release/UC5300P.bin --verify --emulate
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/UC5300P.bin
+            release/BUILD_INFO.json
+          body_path: RELEASE_NOTES.md

@@ -1,0 +1,29 @@
+{
+  "name": "UC5300P (Urive G600) firmware",
+  "app_section": 3,
+  "strings": {
+    "table_ram": "0x178a910",
+    "count": 1056,
+    "valid_count": 1053,
+    "k0_below_id": 527,
+    "korean_first_id": 218
+  },
+  "fonts": {
+    "pairs_ram": "0x1789960",
+    "count": 7
+  },
+  "charmap": "charmap_uc5300p.json",
+  "emulation": {
+    "func_file_off": "0x37b2c0",
+    "func_size": "0xa40",
+    "md5_ok": "0x37b7f0",
+    "md5_fail": "0x37b7d8",
+    "early_fail": "0x37b758",
+    "md5_funcs": ["0x379f44", "0x37a970", "0x37aa38", "0x379f74"],
+    "stub_ready": "0x3676d8",
+    "stub_size": "0x36e3b0",
+    "stub_seek": "0x36e3a0",
+    "stub_read": "0x36e380",
+    "extra_stubs": ["0x411848", "0x410cb4", "0x30eb60"]
+  }
+}

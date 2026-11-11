@@ -1,0 +1,9 @@
+services:
+  fwtool:
+    build: { context: ., target: base }
+    image: uc5300p-fwtool
+    volumes: [".:/w"]
+  voice:
+    build: { context: ., target: voice }
+    image: uc5300p-fwtool:voice
+    volumes: [".:/w"]

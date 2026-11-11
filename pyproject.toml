@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uc5300p-fwtool"
+version = "0.1.0"
+description = "Unpack, edit and repack the firmware of the Urive G600 (UC5300P) dashcam"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = ["pillow"]
+
+[project.optional-dependencies]
+emulate = ["unicorn", "capstone"]
+test = ["pytest"]
+
+[project.scripts]
+fwtool = "fwtool.cli:main"
+
+[tool.setuptools]
+packages = ["fwtool"]
+
+[tool.setuptools.package-data]
+fwtool = ["profiles/*.json", "data/*.json"]
