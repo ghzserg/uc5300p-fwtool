@@ -1,5 +1,8 @@
 # uc5300p-fwtool
 
+- [Родная прошивка](http://www.urive.co.kr/customer/download.php?path=%2Fdownload%2Ffw_FHD%2FUriveG600%2FKOR%2FUC5300P.bin)
+- [Родная инструкция](http://www.urive.co.kr/customer/download.php?path=%2Fdownload%2Fmanual%2FManual_UriveG600_v1.0.pdf)
+
 Распаковка, правка и сборка прошивки видеорегистратора **Urive G600 (UC5300P)** на чипе AIT.
 Работает в два этапа и в Docker:
 
